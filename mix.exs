@@ -39,7 +39,7 @@ defmodule Daffybot.MixProject do
     [
       {:nerves, "~> 1.0", runtime: false},
       {:shoehorn, "~> 0.2"},
-      {:gpio_rpi, "~> 0.2"}
+      {:pigpiox, "~> 0.1"}
     ] ++ deps(@target)
   end
 

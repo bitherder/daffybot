@@ -1,13 +1,16 @@
 defmodule Daffybot.Move do
   use GenServer
 
+  alias Pigpiox.GPIO
+
   def start_link(_) do
     GenServer.start_link(__MODULE__, [])
   end
 
   def init(_) do
-    movement_gpio_pins = Application.get_env(:daffybot, :movement_gpio_pins)
-    movement_pids = movement_pids(movement_gpio_pins)
+    movement_pins = Application.get_env(:daffybot, :movement_gpio_pins)
+
+    set_read_modes(movement_pins)
 
     sleep(self(), 6000)
 
@@ -15,42 +18,38 @@ defmodule Daffybot.Move do
     sleep(self(), 1000)
     stop(self())
 
-    sleep(self(), 100)
+    sleep(self(), 2000)
 
     right(self())
     sleep(self(), 100)
     stop(self())
 
-    sleep(self(), 100)
+    sleep(self(), 2000)
 
     forward(self())
     sleep(self(), 1000)
     stop(self())
 
-    sleep(self(), 100)
+    sleep(self(), 2000)
 
     left(self())
     sleep(self(), 100)
     stop(self())
 
-    sleep(self(), 100)
+    sleep(self(), 2000)
 
     forward(self())
     sleep(self(), 1000)
     stop(self())
 
-    {:ok, movement_pids}
+    {:ok, movement_pins}
   end
 
-  defp movement_pids(direction_pins) do
-    direction_pins
-    |> Enum.map(
-      fn({direction, pin}) ->
-        {:ok, pid} = GpioRpi.start_link(pin, :output)
-        {direction, pid}
-      end
+  defp set_read_modes(movement_pins) do
+    movement_pins
+    |> Enum.each(
+      fn({_, pin}) -> GPIO.set_mode(pin, :output) end
     )
-    |> Map.new
   end
 
   def forward(pid) do
@@ -73,34 +72,42 @@ defmodule Daffybot.Move do
     GenServer.cast(pid, {:sleep, time})
   end
 
-  def handle_cast(:forward, movement_pids) do
-    GpioRpi.write(movement_pids[:left_forward], 1)
-    GpioRpi.write(movement_pids[:right_forward], 1)
-    {:noreply, movement_pids}
+  def handle_cast(:forward, movement_pins) do
+    on(movement_pins[:left_forward])
+    on(movement_pins[:right_forward])
+    {:noreply, movement_pins}
   end
 
-  def handle_cast(:right, movement_pids) do
-    GpioRpi.write(movement_pids[:left_forward], 1)
-    GpioRpi.write(movement_pids[:right_backward], 1)
-    {:noreply, movement_pids}
+  def handle_cast(:right, movement_pins) do
+    on(movement_pins[:left_forward])
+    on(movement_pins[:right_backward])
+    {:noreply, movement_pins}
   end
 
-  def handle_cast(:left, movement_pids) do
-    GpioRpi.write(movement_pids[:left_backward], 1)
-    GpioRpi.write(movement_pids[:right_forward], 1)
-    {:noreply, movement_pids}
+  def handle_cast(:left, movement_pins) do
+    on(movement_pins[:left_backward])
+    on(movement_pins[:right_forward])
+    {:noreply, movement_pins}
   end
 
-  def handle_cast(:stop, movement_pids) do
-    GpioRpi.write(movement_pids[:left_forward], 0)
-    GpioRpi.write(movement_pids[:left_backward], 0)
-    GpioRpi.write(movement_pids[:right_forward], 0)
-    GpioRpi.write(movement_pids[:right_backward], 0)
-    {:noreply, movement_pids}
+  def handle_cast(:stop, movement_pins) do
+    off(movement_pins[:left_forward])
+    off(movement_pins[:left_backward])
+    off(movement_pins[:right_forward])
+    off(movement_pins[:right_backward])
+    {:noreply, movement_pins}
   end
 
-  def handle_cast({:sleep, time}, movement_pids) do
+  def handle_cast({:sleep, time}, movement_pins) do
     Process.sleep(time)
-    {:noreply, movement_pids}
+    {:noreply, movement_pins}
+  end
+
+  defp on(pin) do
+    GPIO.write(pin, 1)
+  end
+
+  defp off(pin) do
+    GPIO.write(pin, 0)
   end
 end
