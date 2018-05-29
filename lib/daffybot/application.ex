@@ -10,6 +10,7 @@ defmodule Daffybot.Application do
   def start(_type, _args) do
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
+    #
     opts = [strategy: :one_for_one, name: Daffybot.Supervisor]
     Supervisor.start_link(children(@target), opts)
   end
@@ -24,8 +25,7 @@ defmodule Daffybot.Application do
 
   def children(_target) do
     [
-      # Starts a worker by calling: Daffybot.Worker.start_link(arg)
-      # {Daffybot.Worker, arg},
+      Daffybot.Move
     ]
   end
 end

@@ -16,6 +16,16 @@ config :shoehorn,
   init: [:nerves_runtime],
   app: Mix.Project.config()[:app]
 
+config :daffybot, movement_gpio_pins: %{
+  left_forward: 5,
+  left_backward: 6,
+  right_forward: 12,
+  right_backward: 13
+}
+
+# Allows for tailing of logs.
+# config :logger, backends: [RingLogger]
+
 # Import target specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 # Uncomment to use target specific configurations
